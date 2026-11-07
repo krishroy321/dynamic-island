@@ -12,16 +12,32 @@
 
     <!-- clock -->
     <key name="hide-datemenu"    type="b"><default>true</default><summary>Hide the built-in GNOME clock / date menu</summary></key>
-    <key name="show-date"        type="b"><default>true</default><summary>Show date next to time in collapsed pill</summary></key>
+    <key name="show-date"        type="b"><default>false</default><summary>Show date next to time in compact pill</summary></key>
     <key name="show-seconds"     type="b"><default>false</default><summary>Include seconds in the clock</summary></key>
     <key name="clock-format"     type="s"><default>"24h"</default><summary>Clock format (24h / 12h)</summary></key>
 
     <!-- size -->
-    <key name="collapsed-width"  type="i"><default>240</default><range min="140" max="480"/><summary>Collapsed notch width</summary></key>
-    <key name="collapsed-height" type="i"><default>32</default> <range min="24"  max="56"/> <summary>Collapsed notch height</summary></key>
+    <key name="collapsed-width"  type="i"><default>220</default><range min="180" max="240"/><summary>Compact island width</summary></key>
+    <key name="collapsed-height" type="i"><default>48</default> <range min="42"  max="56"/> <summary>Compact island height</summary></key>
     <key name="expanded-width"   type="i"><default>640</default><range min="420" max="960"/><summary>Expanded notch width</summary></key>
     <key name="expanded-height"  type="i"><default>280</default><range min="200" max="480"/><summary>Expanded notch height</summary></key>
     <key name="corner-radius"    type="i"><default>20</default> <range min="0"   max="32"/> <summary>Bottom corner radius</summary></key>
+
+    <!-- material and position -->
+    <key name="material-quality" type="s">
+      <choices><choice value="low"/><choice value="medium"/><choice value="high"/></choices>
+      <default>"medium"</default>
+      <summary>Glass material quality (low disables live backdrop blur)</summary>
+    </key>
+    <key name="reduced-motion" type="b"><default>false</default><summary>Use short, low-motion transitions</summary></key>
+    <key name="monitor-mode" type="s">
+      <choices><choice value="primary"/><choice value="focused"/><choice value="fixed"/></choices>
+      <default>"primary"</default>
+      <summary>Monitor used to position the island</summary>
+    </key>
+    <key name="monitor-index" type="i"><default>0</default><range min="0" max="15"/><summary>Zero-based fixed monitor index</summary></key>
+    <key name="top-offset" type="i"><default>6</default><range min="0" max="120"/><summary>Island top offset in logical pixels</summary></key>
+    <key name="horizontal-offset" type="i"><default>0</default><range min="-400" max="400"/><summary>Horizontal offset from the selected monitor center</summary></key>
 
     <!-- colors (CSS rgba strings so users can use any transparency) -->
     <key name="bg-color"         type="s"><default>"rgba(0, 0, 0, 1.0)"</default><summary>Notch background color</summary></key>
@@ -49,10 +65,14 @@
       <default>["&lt;Super&gt;n"]</default>
       <summary>Toggle the notch (expand/collapse)</summary>
     </key>
+    <key name="shortcut-collapse" type="as">
+      <default>["Escape"]</default>
+      <summary>Collapse the expanded island</summary>
+    </key>
 
     <!-- notes -->
     <key name="notes-folder" type="s">
-      <default>"/home/mert/Yazılım/MertProjeler/NexNotchNotes"</default>
+      <default>""</default>
       <summary>Folder where notes are saved as markdown files, one dated subfolder per day</summary>
     </key>
 

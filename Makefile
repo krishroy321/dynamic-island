@@ -1,10 +1,10 @@
 UUID    := nexnotch@nexvar
 PREFIX  := $(HOME)/.local/share/gnome-shell/extensions
 DEST    := $(PREFIX)/$(UUID)
-FILES   := metadata.json extension.js notch.js prefs.js stylesheet.css \
-           modules schemas
+FILES   := metadata.json extension.js notch.js material.js prefs.js stylesheet.css \
+           core modules schemas
 
-.PHONY: all compile-schemas install uninstall pack reload enable disable logs clean
+.PHONY: all compile-schemas install uninstall pack reload enable disable logs test clean
 
 all: compile-schemas
 
@@ -21,6 +21,9 @@ uninstall:
 pack:
 	rm -f $(UUID).shell-extension.zip schemas/gschemas.compiled
 	gnome-extensions pack \
+	    --extra-source=notch.js \
+	    --extra-source=material.js \
+	    --extra-source=core \
 	    --extra-source=modules \
 	    --extra-source=README.md \
 	    --extra-source=LICENSE \
@@ -39,6 +42,9 @@ reload: install
 
 logs:
 	journalctl -f -o cat /usr/bin/gnome-shell
+
+test:
+	node --test tests/*.mjs
 
 clean:
 	rm -f schemas/gschemas.compiled

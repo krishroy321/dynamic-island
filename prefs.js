@@ -39,12 +39,26 @@ export default class NexNotchPrefs extends ExtensionPreferences {
         const perfGroup = new Adw.PreferencesGroup({title: 'Performance'});
         perfGroup.add(this._intRow(settings, 'poll-interval', 'System poll interval (s)', 1, 30, 1,
             '1s = real-time like Vitals; 3s = lighter.'));
+        perfGroup.add(this._choiceRow(settings, 'material-quality', 'Glass quality', [
+            ['low', 'Low — no live blur'], ['medium', 'Medium'], ['high', 'High'],
+        ]));
+        perfGroup.add(this._boolRow(settings, 'reduced-motion', 'Reduced motion',
+            'Shortens island transitions while preserving a visible state change.'));
         page.add(perfGroup);
 
         const panelGroup = new Adw.PreferencesGroup({title: 'Panel integration'});
         panelGroup.add(this._boolRow(settings, 'hide-datemenu',
             'Hide built-in GNOME clock (replace with notch)'));
         page.add(panelGroup);
+
+        const positionGroup = new Adw.PreferencesGroup({title: 'Position'});
+        positionGroup.add(this._choiceRow(settings, 'monitor-mode', 'Monitor', [
+            ['primary', 'Primary monitor'], ['focused', 'Monitor with focused window'], ['fixed', 'Fixed monitor index'],
+        ]));
+        positionGroup.add(this._intRow(settings, 'monitor-index', 'Fixed monitor index (0 based)', 0, 15, 1));
+        positionGroup.add(this._intRow(settings, 'top-offset', 'Top offset', 0, 120, 1));
+        positionGroup.add(this._intRow(settings, 'horizontal-offset', 'Horizontal offset', -400, 400, 1));
+        page.add(positionGroup);
 
         return page;
     }
@@ -53,8 +67,8 @@ export default class NexNotchPrefs extends ExtensionPreferences {
         const page = new Adw.PreferencesPage({title: 'Appearance', icon_name: 'applications-graphics-symbolic'});
 
         const sizeGroup = new Adw.PreferencesGroup({title: 'Size'});
-        sizeGroup.add(this._intRow(settings, 'collapsed-width',  'Collapsed width',   140, 480, 5));
-        sizeGroup.add(this._intRow(settings, 'collapsed-height', 'Collapsed height',   24,  56, 1));
+        sizeGroup.add(this._intRow(settings, 'collapsed-width',  'Compact width',   180, 240, 5));
+        sizeGroup.add(this._intRow(settings, 'collapsed-height', 'Compact height',   42,  56, 1));
         sizeGroup.add(this._intRow(settings, 'expanded-width',   'Expanded width',    420, 960, 10));
         sizeGroup.add(this._intRow(settings, 'expanded-height',  'Expanded height',   200, 480, 10));
         sizeGroup.add(this._intRow(settings, 'corner-radius',    'Corner radius',       0,  32, 1));
@@ -185,8 +199,9 @@ export default class NexNotchPrefs extends ExtensionPreferences {
         const openBtn = new Adw.ActionRow({title: 'Open notes folder'});
         const open = new Gtk.Button({label: 'Open', css_classes: ['pill']});
         open.connect('clicked', () => {
-            Gio.AppInfo.launch_default_for_uri(
-                Gio.File.new_for_path(settings.get_string('notes-folder')).get_uri(), null);
+            const folder = settings.get_string('notes-folder') ||
+                GLib.build_filenamev([GLib.get_user_data_dir(), 'NexNotchNotes']);
+            Gio.AppInfo.launch_default_for_uri(Gio.File.new_for_path(folder).get_uri(), null);
         });
         openBtn.add_suffix(open);
         group.add(openBtn);
@@ -202,12 +217,15 @@ export default class NexNotchPrefs extends ExtensionPreferences {
             title: 'Presets',
             description: 'Each preset is "work/break" minutes. Click × to remove, + to add a new one.',
         });
+        /* Adw.PreferencesGroup has an internal GtkBox child, so walking
+           get_first_child() also finds the implementation child rather than
+           only rows that were added through PreferencesGroup.add(). Keep our
+           own row list and remove only those rows. */
+        let presetRows = [];
 
         const rebuild = () => {
-            const children = [];
-            let row = presetGroup.get_first_child();
-            while (row) { children.push(row); row = row.get_next_sibling(); }
-            for (const c of children) presetGroup.remove(c);
+            for (const row of presetRows) presetGroup.remove(row);
+            presetRows = [];
 
             const presets = settings.get_strv('pomodoro-presets');
             const active  = settings.get_string('pomodoro-active-preset');
@@ -231,6 +249,7 @@ export default class NexNotchPrefs extends ExtensionPreferences {
                 r.add_suffix(activate);
                 r.add_suffix(remove);
                 presetGroup.add(r);
+                presetRows.push(r);
             }
 
             const addRow = new Adw.ActionRow({title: 'New preset'});
@@ -258,6 +277,7 @@ export default class NexNotchPrefs extends ExtensionPreferences {
             addRow.add_suffix(breakEntry);
             addRow.add_suffix(addBtn);
             presetGroup.add(addRow);
+            presetRows.push(addRow);
         };
         rebuild();
         page.add(presetGroup);
@@ -364,7 +384,7 @@ export default class NexNotchPrefs extends ExtensionPreferences {
         const page = new Adw.PreferencesPage({title: 'Shortcuts', icon_name: 'input-keyboard-symbolic'});
         const group = new Adw.PreferencesGroup({
             title: 'Global shortcuts',
-            description: 'Edit with accelerator syntax, e.g. <Super><Shift>d',
+            description: 'Edit with accelerator syntax, e.g. &lt;Super&gt;&lt;Shift&gt;d',
         });
 
         const tg = new Adw.EntryRow({title: 'Toggle notch (expand / collapse)'});
@@ -449,6 +469,22 @@ export default class NexNotchPrefs extends ExtensionPreferences {
         });
         if (subtitle) row.set_subtitle(subtitle);
         settings.bind(key, row, 'value', 0);
+        return row;
+    }
+
+    _choiceRow(settings, key, title, choices) {
+        const model = Gtk.StringList.new(choices.map(([, label]) => label));
+        const row = new Adw.ComboRow({title, model});
+        const syncFromSettings = () => {
+            const index = choices.findIndex(([value]) => value === settings.get_string(key));
+            row.selected = Math.max(0, index);
+        };
+        row.connect('notify::selected', () => {
+            const choice = choices[row.selected];
+            if (choice) settings.set_string(key, choice[0]);
+        });
+        settings.connect(`changed::${key}`, syncFromSettings);
+        syncFromSettings();
         return row;
     }
 

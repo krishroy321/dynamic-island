@@ -6,7 +6,7 @@ import Clutter from 'gi://Clutter';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-const DEFAULT_NOTES_DIR = '/home/mert/Yazılım/MertProjeler/NexNotchNotes';
+const DEFAULT_NOTES_DIR = GLib.build_filenamev([GLib.get_user_data_dir(), 'NexNotchNotes']);
 
 function _slug(text) {
     const s = (text || '').trim().toLowerCase()

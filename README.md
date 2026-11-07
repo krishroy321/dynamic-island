@@ -8,7 +8,7 @@
 
 **Bring the iPhone Dynamic Island vibe to your Linux desktop.**
 
-NexNotch is a MacBook-notch-shaped pill that replaces the GNOME top-bar clock and expands on hover into a tabbed productivity hub. Live system stats, Google Calendar & Tasks (via GNOME Online Accounts — no extra login), dual-city weather, a Pomodoro timer with a full stats dashboard, sticky notes, a file drop shelf with optional Drive upload, a notification peek with click-to-activate, and a quick-actions panel for privacy indicators and system controls — all in a single, beautiful, hover-expanding component that feels native to GNOME 49+.
+NexNotch starts as a compact, clock-sized island. Click it or press `Super + N` to expand into the existing tabbed productivity hub; moving the pointer over it does not open the dashboard. The expanded view keeps live system stats, Google Calendar & Tasks (via GNOME Online Accounts — no extra login), dual-city weather, a Pomodoro timer with a full stats dashboard, sticky notes, a file drop shelf with optional Drive upload, notification previews, and quick actions available without putting them on the compact surface.
 
 > Built at **[NexVar](https://nexvar.io)** by **[Mert Ali Dalkır](https://mertdlkr.com)** — the polished desktop tooling we use ourselves.
 
@@ -16,7 +16,7 @@ NexNotch is a MacBook-notch-shaped pill that replaces the GNOME top-bar clock an
 
 ## Why NexNotch?
 
-GNOME's top bar is wasted space. macOS turned its notch into a Dynamic Island. NexNotch does the same for Linux — a single hover-expanding component that replaces a dozen separate extensions with one cohesive, performant, beautifully-designed hub.
+GNOME's top bar is wasted space. macOS turned its notch into a Dynamic Island. NexNotch brings that compact-to-expanded interaction to Linux: a small default surface, with the larger productivity hub available when intentionally opened.
 
 - **Idle CPU < 0.1 %** — lighter than most single-purpose extensions
 - **Idle RAM < 15 MB** — no Electron, no bloat
@@ -28,7 +28,7 @@ GNOME's top bar is wasted space. macOS turned its notch into a Dynamic Island. N
 
 ## What's inside the notch
 
-Hover the pill (or press `Super + N`) to expand into 7 tabs:
+Click the island (or press `Super + N`) to expand into the tabs. Click outside or press `Escape` to collapse it:
 
 | Tab | What it does |
 |---|---|
@@ -82,6 +82,20 @@ make pack       # produces nexnotch@nexvar.shell-extension.zip
 
 Then upload via [extensions.gnome.org/upload](https://extensions.gnome.org/upload/) for review, or install locally with `gnome-extensions install ./nexnotch@nexvar.shell-extension.zip`.
 
+## Adaptive material and placement
+
+On GNOME Shell 49 and 50, Medium and High quality request `Shell.BlurEffect` in background mode, restricted to the island actor. This samples and blurs pixels beneath the actor; Low disables it. GNOME documents this mode as more expensive because the underlying pixels cannot be cached. If effect setup fails, NexNotch falls back to its layered translucent surface.
+
+High quality also attempts an original `Clutter.ShaderEffect` overlay for rounded bevel shading, a restrained motion-driven caustic, and a pointer-following specular cue. It processes the material actor's offscreen buffer. It does not receive an arbitrary desktop texture, so the shader does not magnify or refract the desktop and its colored rim is only a dispersion cue, not separated background RGB channels. This is an optical material approximation, not physically accurate refraction or Apple's implementation. Shader setup failure falls back to the native blur backend or layered glass. See the manual cases in `tests/OPTICAL_VISUAL_QA.md`.
+
+Placement can follow the primary monitor, the focused window's monitor, or a fixed monitor index. Coordinates use GNOME Shell's logical monitor geometry, so the extension does not multiply positions by the scale factor. Monitor hotplug and focused-window changes update placement. Wayland and X11 use the same Shell actor/effect path; this project has not been visually validated in an X11 session in this development run.
+
+The visual material remains an Apple-inspired approximation. It does not provide full environment-aware refraction, true light transport, or light/dark adaptive text colors. Notification grouping is by GNOME notification source, and the queue prioritizes urgency while retaining a single visible island.
+
+## Development checks
+
+Run the pure layout, queue, and transition-controller tests with `make test` (Node.js required for development only). Compile the extension schema with `make compile-schemas`. These checks do not replace a live Shell visual test.
+
 ---
 
 ## Global keyboard shortcuts
@@ -132,8 +146,8 @@ nexnotch@nexvar/
 ├── metadata.json              # shell-version: 49, 50
 ├── extension.js               # enable/disable; addTopChrome mount,
 │                              # monitor tracking, EDS autostart
-├── notch.js                   # St.Widget: collapsed pill + expanded
-│                              # tabbed panel, hover + DND + keybinds,
+├── notch.js                   # St.Widget: compact pill + detached expanded
+│                              # tabbed panel, click + DND + keybinds,
 │                              # notification peek with click-to-activate
 ├── modules/
 │   ├── system.js              # /proc CPU/mem/net/disk + hwmon thermals,

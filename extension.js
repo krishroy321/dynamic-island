@@ -41,13 +41,22 @@ export default class NexNotchExtension extends Extension {
         Main.layoutManager.addTopChrome(this._notch, {
             trackFullscreen: true,
             affectsStruts: false,
-            affectsInputRegion: true,
         });
 
         this._reposition = () => this._positionNotch();
         this._monitorsChangedId = Main.layoutManager.connect('monitors-changed', this._reposition);
         this._panelAllocId = Main.panel.connect('notify::allocation', this._reposition);
+        this._focusMonitorId = 0;
+        try {
+            this._focusMonitorId = global.display.connect('notify::focus-window', this._reposition);
+        } catch (_) {}
+        this._settingsMonitorId = this._settings.connect('changed', (_, key) => {
+            if (['monitor-mode', 'monitor-index', 'top-offset', 'horizontal-offset'].includes(key))
+                this._positionNotch();
+        });
         this._notchAllocId = this._notch.connect('notify::allocation', this._reposition);
+        this._notchWidthId = this._notch.connect('notify::width', this._reposition);
+        this._notchHeightId = this._notch.connect('notify::height', this._reposition);
         this._positionNotch();
 
         this._notch.start();
@@ -55,15 +64,41 @@ export default class NexNotchExtension extends Extension {
 
     _positionNotch() {
         if (!this._notch) return;
-        const monitor = Main.layoutManager.primaryMonitor;
+        const monitor = this.getTargetMonitor();
         if (!monitor) return;
         const [, natW] = this._notch.get_preferred_width(-1);
         const [, natH] = this._notch.get_preferred_height(natW);
-        const w = natW || this._notch.width || 240;
-        const x = monitor.x + Math.floor((monitor.width - w) / 2);
-        const y = monitor.y;
+        /* Use the allocated width first. The natural width can describe the
+           collapsed child while the actor is already animating to its
+           expanded width, which previously made the island drift left. */
+        const allocatedW = Number(this._notch.width) || 0;
+        const w = allocatedW > 0 ? allocatedW : (natW || 240);
+        const horizontalOffset = this._settings.get_int('horizontal-offset');
+        const topOffset = this._settings.get_int('top-offset');
+        const x = Math.max(monitor.x + 8, Math.min(monitor.x + monitor.width - w - 8,
+            monitor.x + Math.floor((monitor.width - w) / 2) + horizontalOffset));
+        const y = monitor.y + topOffset;
         this._notch.set_position(x, y);
     }
+
+    getTargetMonitor() {
+        const monitors = Main.layoutManager.monitors ?? [];
+        if (!monitors.length) return Main.layoutManager.primaryMonitor ?? null;
+        const mode = this._settings.get_string('monitor-mode');
+        if (mode === 'focused') {
+            try {
+                const index = global.display.focus_window?.get_monitor();
+                if (index >= 0 && monitors[index]) return monitors[index];
+            } catch (_) {}
+        }
+        if (mode === 'fixed') {
+            const index = this._settings.get_int('monitor-index');
+            if (monitors[index]) return monitors[index];
+        }
+        return Main.layoutManager.primaryMonitor ?? monitors[0];
+    }
+
+    reposition() { this._positionNotch(); }
 
     disable() {
         if (this._monitorsChangedId) {
@@ -74,9 +109,23 @@ export default class NexNotchExtension extends Extension {
             try { Main.panel.disconnect(this._panelAllocId); } catch (_) {}
             this._panelAllocId = 0;
         }
+        if (this._focusMonitorId) {
+            try { global.display.disconnect(this._focusMonitorId); } catch (_) {}
+            this._focusMonitorId = 0;
+        }
+        if (this._settingsMonitorId) {
+            try { this._settings.disconnect(this._settingsMonitorId); } catch (_) {}
+            this._settingsMonitorId = 0;
+        }
         if (this._notchAllocId) {
             try { this._notch?.disconnect(this._notchAllocId); } catch (_) {}
             this._notchAllocId = 0;
+        }
+        for (const key of ['_notchWidthId', '_notchHeightId']) {
+            if (this[key]) {
+                try { this._notch?.disconnect(this[key]); } catch (_) {}
+                this[key] = 0;
+            }
         }
         if (this._notch) {
             this._notch.stop();

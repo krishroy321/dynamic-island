@@ -3,16 +3,26 @@
    are overridden at runtime from gsettings (see notch.js _applyColors). */
 
 .nexnotch {
-    background-color: rgb(0, 0, 0);
-    border-radius: 0 0 20px 20px;
+    background-color: transparent;
+    border-radius: 24px;
 }
 
-.nexnotch-bg {
-    background-color: rgb(0, 0, 0);
-    border-radius: 0 0 20px 20px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-top: 0;
-    box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.45);
+.nexnotch-material { border-radius: 24px; }
+.nexnotch-glass-backdrop { border-radius: 24px; }
+.nexnotch-glass-body { border-radius: 24px; }
+.nexnotch-glass-ambient { border-radius: 24px; }
+.nexnotch-glass-optics { border-radius: 24px; }
+.nexnotch-glass-diffuse {
+    border-radius: 24px;
+    background-gradient-direction: vertical;
+    background-gradient-start: rgba(255, 255, 255, 0.075);
+    background-gradient-end: rgba(255, 255, 255, 0.0);
+}
+.nexnotch-glass-edge { border-radius: 24px; }
+.nexnotch-glass-reflection {
+    min-height: 2px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
 }
 
 /* ——— collapsed pill ——— */
@@ -110,6 +120,17 @@
 }
 .nexnotch-music-card-top { spacing: 10px; }
 .nexnotch-music-art        { border-radius: 6px; }
+.nexnotch-media-progress-track {
+    height: 3px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.16);
+    margin: 3px 2px;
+}
+.nexnotch-media-progress-fill {
+    height: 3px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.82);
+}
 .nexnotch-music-art-fallback { color: rgba(255, 255, 255, 0.7); }
 .nexnotch-music-txt { spacing: 2px; }
 .nexnotch-music-card-title {
@@ -643,9 +664,8 @@
 .nexnotch-peek {
     padding: 10px 12px 10px 14px;
     spacing: 12px;
-    background-color: rgb(0, 0, 0);
-    border-radius: 0 0 20px 20px;
-    box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.55);
+    background-color: transparent;
+    border: 0;
 }
 
 .nexnotch-peek-icon-bin {
@@ -675,6 +695,14 @@
     font-weight: 500;
     font-feature-settings: "tnum";
     padding-left: 6px;
+}
+.nexnotch-peek-count {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.10);
 }
 
 .nexnotch-peek-body {
@@ -745,3 +773,179 @@
     border: 0;
 }
 .nexnotch-claude-refresh-btn:hover { background-color: rgba(255, 255, 255, 0.14); color: white; }
+
+/* ——— adaptive Liquid Glass polish ———
+   The runtime surface tint is derived from accent-color in notch.js. These
+   rules provide the shared rounded geometry and hierarchy for every state. */
+.nexnotch-collapsed {
+    padding: 0 16px;
+    spacing: 2px;
+}
+
+.nexnotch-cluster { spacing: 8px; }
+.nexnotch-left, .nexnotch-right { min-width: 66px; }
+.nexnotch-center { padding: 0 8px; }
+
+.nexnotch-expanded {
+    padding: 16px 20px 18px 20px;
+    spacing: 14px;
+}
+
+.nexnotch-header {
+    spacing: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.nexnotch-big-clock {
+    font-size: 30px;
+    font-weight: 650;
+    letter-spacing: -0.8px;
+}
+
+.nexnotch-tabs {
+    spacing: 3px;
+    padding: 4px;
+    background-color: rgba(255, 255, 255, 0.055);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 14px;
+}
+
+.nexnotch-tab {
+    border-radius: 10px;
+    padding: 6px 8px;
+    font-size: 10px;
+}
+.nexnotch-tab:focus { border-radius: 10px; }
+
+.nexnotch-content {
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.028);
+    border: 1px solid rgba(255, 255, 255, 0.065);
+    border-radius: 16px;
+}
+
+.nexnotch-music-card,
+.nexnotch-notes-card,
+.nexnotch-task-compose {
+    border-radius: 14px;
+    border-color: rgba(255, 255, 255, 0.10);
+    background-color: rgba(255, 255, 255, 0.045);
+}
+
+.nexnotch-music-btn,
+.nexnotch-pomo-btn,
+.nexnotch-quick-action,
+.nexnotch-notes-clear,
+.nexnotch-claude-refresh-btn,
+.nexnotch-cal-month-nav {
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    background-color: rgba(255, 255, 255, 0.065);
+}
+
+.nexnotch-pomo-preset,
+.nexnotch-weather-tab,
+.nexnotch-task-add-btn,
+.nexnotch-task-compose-cancel,
+.nexnotch-task-compose-submit,
+.nexnotch-notes-new {
+    border-radius: 999px;
+}
+
+.nexnotch-quick-pill {
+    border-radius: 999px;
+    border-color: rgba(255, 255, 255, 0.10);
+    background-color: rgba(255, 255, 255, 0.055);
+}
+
+.nexnotch-task-lists {
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.075);
+}
+.nexnotch-task-list-tab { border-radius: 9px; }
+
+.nexnotch-weather-day,
+.nexnotch-cal-row,
+.nexnotch-task-row {
+    border-radius: 10px;
+}
+
+.nexnotch-peek {
+    border-radius: 24px;
+    border: 0;
+}
+
+.nexnotch-empty { padding: 34px 12px; }
+
+/* ——— readability pass ———
+   Shell panels are often viewed from arm's length. Keep the glass subtle,
+   but make every informational label comfortably readable. */
+.nexnotch-clock { font-size: 15px; }
+.nexnotch-date-mini { font-size: 12px; }
+.nexnotch-music-title,
+.nexnotch-music-sep,
+.nexnotch-music-artist,
+.nexnotch-pomo-mini { font-size: 12px; }
+
+.nexnotch-tab { font-size: 12px; padding: 7px 9px; }
+.nexnotch-date { font-size: 13px; }
+.nexnotch-date-month { font-size: 12px; }
+.nexnotch-content { padding: 12px; }
+
+.nexnotch-sys-headline-label,
+.nexnotch-stats-label,
+.nexnotch-stats-chart-title,
+.nexnotch-stats-totals,
+.nexnotch-quick-section,
+.nexnotch-weather-meta-label { font-size: 12px; }
+.nexnotch-sys-headline-value { font-size: 21px; }
+.nexnotch-sys-label,
+.nexnotch-sys-value,
+.nexnotch-quick-pill-value,
+.nexnotch-quick-bt-name,
+.nexnotch-cal-title,
+.nexnotch-task-title,
+.nexnotch-weather-meta-value { font-size: 13px; }
+.nexnotch-stats-bar-value,
+.nexnotch-stats-bar-label,
+.nexnotch-quick-bt-pct,
+.nexnotch-task-list-tag,
+.nexnotch-task-due { font-size: 11px; }
+
+.nexnotch-weather-area { font-size: 17px; }
+.nexnotch-weather-desc { font-size: 13px; }
+.nexnotch-weather-day-label { font-size: 12px; }
+.nexnotch-weather-day-temp { font-size: 14px; }
+.nexnotch-weather-day-desc { font-size: 11px; }
+
+.nexnotch-notes-heading { font-size: 13px; }
+.nexnotch-notes-new,
+.nexnotch-notes-clear,
+.nexnotch-notes-entry,
+.nexnotch-notes-title-entry { font-size: 13px; }
+.nexnotch-notes-info { font-size: 10px; }
+
+.nexnotch-pomo-state { font-size: 13px; }
+.nexnotch-pomo-cycles,
+.nexnotch-pomo-btn,
+.nexnotch-pomo-preset,
+.nexnotch-weather-tab,
+.nexnotch-task-add-btn { font-size: 12px; }
+.nexnotch-task-compose-title,
+.nexnotch-task-compose-notes { font-size: 13px; }
+
+.nexnotch-cal-month-title { font-size: 12px; }
+.nexnotch-cal-dow-cell { font-size: 10px; }
+.nexnotch-cal-day-cell { font-size: 11px; }
+.nexnotch-cal-when { font-size: 12px; }
+
+.nexnotch-quick-pill-label,
+.nexnotch-quick-action,
+.nexnotch-claude-refresh-btn { font-size: 12px; }
+
+.nexnotch-peek-title { font-size: 15px; }
+.nexnotch-peek-time { font-size: 11px; }
+.nexnotch-peek-body { font-size: 13px; }
+.nexnotch-claude-reset,
+.nexnotch-claude-refresh-label { font-size: 11px; }

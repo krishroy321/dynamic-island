@@ -13,6 +13,7 @@ const PLAYER_IFACE_XML = `
   <interface name="org.mpris.MediaPlayer2.Player">
     <property name="PlaybackStatus" type="s" access="read"/>
     <property name="Metadata"       type="a{sv}" access="read"/>
+    <property name="Position"       type="x" access="read"/>
     <property name="CanGoNext"      type="b" access="read"/>
     <property name="CanGoPrevious"  type="b" access="read"/>
     <property name="CanPlay"        type="b" access="read"/>
@@ -20,6 +21,7 @@ const PLAYER_IFACE_XML = `
     <method name="PlayPause"/>
     <method name="Next"/>
     <method name="Previous"/>
+    <method name="Seek"><arg direction="in" type="x"/></method>
     <method name="Play"/>
     <method name="Pause"/>
     <method name="Stop"/>
@@ -52,6 +54,7 @@ function _extractMeta(metadata) {
 export const MprisWatcher = GObject.registerClass({
     Signals: {
         'changed': {param_types: [GObject.TYPE_JSOBJECT]},
+        'progress': {param_types: [GObject.TYPE_JSOBJECT]},
     },
 }, class MprisWatcher extends GObject.Object {
     _init() {
@@ -59,6 +62,7 @@ export const MprisWatcher = GObject.registerClass({
         this._watchIds = new Map();
         this._players  = new Map();
         this._active   = null;
+        this._positionTimer = 0;
     }
 
     start() {
@@ -81,6 +85,7 @@ export const MprisWatcher = GObject.registerClass({
 
     stop() {
         this._stopped = true;
+        if (this._positionTimer) { GLib.source_remove(this._positionTimer); this._positionTimer = 0; }
         if (this._nameOwnerId) {
             try { Gio.DBus.session.signal_unsubscribe(this._nameOwnerId); } catch (_) {}
             this._nameOwnerId = 0;
@@ -146,6 +151,7 @@ export const MprisWatcher = GObject.registerClass({
             } catch (_) {}
         }
         if (!best) {
+            if (this._positionTimer) { GLib.source_remove(this._positionTimer); this._positionTimer = 0; }
             this._active = null;
             this.emit('changed', {playing: false, paused: false});
             return;
@@ -163,6 +169,12 @@ export const MprisWatcher = GObject.registerClass({
         try { canPlay = best.proxy.CanPlay !== false; } catch (_) {}
         try { canPause = best.proxy.CanPause !== false; } catch (_) {}
         this._active = best;
+        let position = 0;
+        try { position = Math.max(0, Number(best.proxy.Position) / 1000000); } catch (_) {}
+        const duration = Math.max(0, Number(meta.length) / 1000000);
+        best.position = position;
+        best.duration = duration;
+        best.sampledAt = GLib.get_monotonic_time() / 1000000;
         this.emit('changed', {
             playing: best.status === 'Playing',
             paused:  best.status === 'Paused',
@@ -172,7 +184,28 @@ export const MprisWatcher = GObject.registerClass({
             artist: meta.artist,
             album:  meta.album,
             artUrl: meta.artUrl,
+            position,
+            duration,
             canNext, canPrev, canPlay, canPause,
+        });
+        this._restartPositionTimer();
+    }
+
+    _restartPositionTimer() {
+        if (this._positionTimer) { GLib.source_remove(this._positionTimer); this._positionTimer = 0; }
+        if (!this._active || this._active.status !== 'Playing') {
+            if (this._active) this.emit('progress', {position: this._active.position ?? 0, duration: this._active.duration ?? 0});
+            return;
+        }
+        this._positionTimer = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 1, () => {
+            if (this._stopped || !this._active || this._active.status !== 'Playing') {
+                this._positionTimer = 0;
+                return GLib.SOURCE_REMOVE;
+            }
+            const elapsed = Math.max(0, GLib.get_monotonic_time() / 1000000 - this._active.sampledAt);
+            const position = Math.min(this._active.duration || Infinity, (this._active.position ?? 0) + elapsed);
+            this.emit('progress', {position, duration: this._active.duration ?? 0});
+            return GLib.SOURCE_CONTINUE;
         });
     }
 
@@ -181,9 +214,10 @@ export const MprisWatcher = GObject.registerClass({
     playPause() { this._callActive('PlayPauseRemote'); }
     next()      { this._callActive('NextRemote'); }
     previous()  { this._callActive('PreviousRemote'); }
+    seek(offsetSeconds) { this._callActive('SeekRemote', [Math.round(offsetSeconds * 1000000)]); }
 
-    _callActive(method) {
+    _callActive(method, args = []) {
         if (!this._active?.proxy) return;
-        try { this._active.proxy[method](() => {}); } catch (e) { logError(e, 'nexnotch:mpris:call'); }
+        try { this._active.proxy[method](...args, () => {}); } catch (e) { logError(e, 'nexnotch:mpris:call'); }
     }
 });
